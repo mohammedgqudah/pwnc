@@ -1,6 +1,6 @@
 # Pwnc
 
-A shell script to download the challenge binary from a remote instance in pwn.college.
+A shell script to download a challenge from pwn.college.
 
 1. Start the challenge on pwn.college
 2. In your projects/ctf folder run `pwnc challenge-name`
