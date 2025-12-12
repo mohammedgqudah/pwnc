@@ -1,4 +1,7 @@
 #!/bin/bash
+set -e
+set -u
+set -o pipefail
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <challenge_name>"
@@ -8,30 +11,43 @@ fi
 CHALLENGE_NAME=$1
 
 mkdir -p "$CHALLENGE_NAME"
+cd $CHALLENGE_NAME
 
-# copy challenge files
-scp -r hacker@dojo.pwn.college:/challenge/* "$CHALLENGE_NAME/"
+scp -r hacker@dojo.pwn.college:/challenge/* .
 
-cat << 'EOF' > "./$CHALLENGE_NAME/solve.py"
+# detect the challenge binary name
+BINARY=$(find . -maxdepth 1 -type f -print0 | xargs -0 file | grep -m 1 "ELF" | awk -F: '{print $1}')
+
+scp hacker@dojo.pwn.college:/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 .
+scp hacker@dojo.pwn.college:/lib/x86_64-linux-gnu/libc.so.6 .
+
+cp $BINARY "$BINARY"-patched
+patchelf "$BINARY"-patched --set-rpath . --set-interpreter ./ld-linux-x86-64.so.2
+
+# some debug info go missing in the patched elf, so we add it again. (not sure if there is a better way)
+objcopy --only-keep-debug $BINARY challenge.debug
+objcopy --add-gnu-debuglink=challenge.debug "$BINARY"-patched
+
+cat << EOF > "./solve.py"
 from pwn import *
-import sys
 
-prog = sys.argv[1]
+prog = "$BINARY-patched"
 
 elf = ELF(prog)
 context.binary = elf
+context.aslr = False
+
 if "remote" in sys.argv:
     s = ssh('hacker', 'dojo.pwn.college')
-    p = s.shell(f'/challenge/{prog}')
+    p = s.shell(f'/challenge/$BINARY')
 else:
     p = process(prog)
 
 p.interactive()
 EOF
 
-echo "Challenge folder created"
-cd $CHALLENGE_NAME
 uv init .
 uv add pwntools
 rm -f README.md main.py
 
+echo "Challenge folder created"
