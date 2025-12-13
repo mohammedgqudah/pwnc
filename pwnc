@@ -38,8 +38,8 @@ context.binary = elf
 context.aslr = False
 
 if "remote" in sys.argv:
-    s = ssh('hacker', 'dojo.pwn.college')
-    p = s.shell(f'/challenge/$BINARY')
+    session = ssh('hacker', 'dojo.pwn.college')
+    p = session.process(f'/challenge/$BINARY')
 else:
     p = process(prog)
     if "gdb" in sys.argv:
