@@ -10,24 +10,39 @@ In the folder a `solve.py` is created
 
 ```py
 from pwn import *
-import sys
 
-prog = sys.argv[1]
+prog = "$BINARY-patched"
 
 elf = ELF(prog)
 context.binary = elf
+context.aslr = False
+
 if "remote" in sys.argv:
-    s = ssh('hacker', 'dojo.pwn.college')
-    p = s.shell(f'/challenge/{prog}')
+    session = ssh('hacker', 'dojo.pwn.college')
+    p = session.process(f'/challenge/$BINARY')
 else:
     p = process(prog)
+    if "gdb" in sys.argv:
+        gdb.attach(p)
 
 p.interactive()
 ```
-and pwntools is already installed in the virtual environment (managed by UV).
+it will also install pwntools in the virtual environment (managed by UV).
 
 # Installation
 
+### prerequisites
+1. `patchelf`
+```
+# apt
+sudo apt-get install patchelf
+
+# pacman
+sudo pacman -S patchelf
+```
+2. `uv` <https://docs.astral.sh/uv/getting-started/installation/>
+
+### install
 ```
 git clone https://github.com/mohammedgqudah/pwnc
 cd pwnc
