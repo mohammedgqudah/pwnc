@@ -1,12 +1,13 @@
 #!/bin/bash
-set -e
-set -u
-set -o pipefail
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <challenge_name>"
     exit 1
 fi
+
+set -e
+set -u
+set -o pipefail
 
 CHALLENGE_NAME=$1
 
