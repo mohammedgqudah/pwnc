@@ -19,17 +19,68 @@ scp -r hacker@dojo.pwn.college:/challenge/* .
 # detect the challenge binary name
 BINARY=$(find . -maxdepth 1 -type f -print0 | xargs -0 file | grep -m 1 "ELF" | awk -F: '{print $1}')
 
-scp hacker@dojo.pwn.college:/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 .
-scp hacker@dojo.pwn.college:/lib/x86_64-linux-gnu/libc.so.6 .
 
-cp $BINARY "$BINARY"-patched
-patchelf "$BINARY"-patched --set-rpath . --set-interpreter ./ld-linux-x86-64.so.2
+if [[ "$BINARY" == *.ko ]]; then
+    scp hacker@dojo.pwn.college:{/challenge/bzImage,/opt/linux/bzImage} . 2>/dev/null || true
+    cat << EOF > "./solve.py"
+from pwn import *
 
-# some debug info go missing in the patched elf, so we add it again. (not sure if there is a better way)
-objcopy --only-keep-debug $BINARY challenge.debug
-objcopy --add-gnu-debuglink=challenge.debug "$BINARY"-patched
+prog = "$BINARY"
+ko = ELF(prog)
+s = ssh('hacker', 'dojo.pwn.college')
 
-cat << EOF > "./solve.py"
+process("make")
+s.upload("./pwn", "pwn")
+s.shell("vm start")
+
+io = process(
+    ['ssh', '-tt', 'hacker@dojo.pwn.college', 'vm', 'connect'],
+    stdin=PTY, stdout=PTY, stderr=PTY
+)
+io.recvuntil(b'$')
+io.sendline(b"chmod +x ./pwn")
+io.interactive(prompt=None)
+EOF
+
+    cat <<EOF > Makefile
+all: pwn
+
+pwn: pwn.c
+$(printf '\t')toolup cc x86_64-unknown-linux-musl -static ./pwn.c -o pwn
+EOF
+
+    cat << EOF > "./pwn.c"
+#include <stdio.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+int main() {
+  
+  int fd = open("/proc/pwncollege", 0);
+
+  execve("/bin/sh", NULL, NULL);
+  return 0;
+}
+EOF
+
+else
+    INTERP=$(patchelf --print-interpreter "$BINARY")
+    LIBC=$(patchelf --print-needed "$BINARY" | head -n1)
+
+    scp "hacker@dojo.pwn.college:$INTERP" .
+    scp "hacker@dojo.pwn.college:$LIBC" .
+
+    cp $BINARY "$BINARY"-patched
+
+    patchelf "$BINARY"-patched --set-rpath . --set-interpreter ./ld-linux-x86-64.so.2
+    patchelf --replace-needed /challenge/lib/libc.so.6 libc.so.6 "$BINARY"-patched
+
+    # some debug info go missing in the patched elf, so we add it again. (not sure if there is a better way)
+    #objcopy --only-keep-debug $BINARY challenge.debug
+    #objcopy --add-gnu-debuglink=challenge.debug "$BINARY"-patched
+
+    cat << EOF > "./solve.py"
 from pwn import *
 
 prog = "$BINARY-patched"
@@ -49,6 +100,7 @@ else:
 
 p.interactive()
 EOF
+fi
 
 uv init .
 uv add pwntools
