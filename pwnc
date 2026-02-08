@@ -68,6 +68,10 @@ else
     INTERP=$(patchelf --print-interpreter "$BINARY")
     LIBC=$(patchelf --print-needed "$BINARY" | head -n1)
 
+    if [ "$LIBC" = "libc.so.6" ]; then
+      LIBC="/lib/x86_64-linux-gnu/libc.so.6"
+    fi
+
     scp "hacker@dojo.pwn.college:$INTERP" .
     scp "hacker@dojo.pwn.college:$LIBC" .
 
