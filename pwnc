@@ -72,7 +72,7 @@ else
         [[ "$line" != /* ]] && line="/lib/x86_64-linux-gnu/$line"
         [[ "$line" == *"libc.so.6"* ]] && LIBC="$line"
 
-        scp "hacker@dojo.pwn.college:$line" .
+        [[ "$line" != *"libcapstone.so.5"* ]] && scp "hacker@dojo.pwn.college:$line" .
     done < <(patchelf --print-needed "$BINARY")
 
     scp "hacker@dojo.pwn.college:$INTERP" .
