@@ -56,10 +56,10 @@ EOF
 #include <unistd.h>
 
 int main() {
-  
   int fd = open("/proc/pwncollege", 0);
 
-  execve("/bin/sh", NULL, NULL);
+  char *args[] = {"/bin/sh", NULL};
+  execve("/bin/sh", args, NULL);
   return 0;
 }
 EOF
@@ -72,7 +72,8 @@ else
         [[ "$line" != /* ]] && line="/lib/x86_64-linux-gnu/$line"
         [[ "$line" == *"libc.so.6"* ]] && LIBC="$line"
 
-        [[ "$line" != *"libcapstone.so.5"* ]] && scp "hacker@dojo.pwn.college:$line" .
+        [[ "$line" == *"libcapstone.so.5"* ]] && line="/lib/libcapstone.so.5"
+        scp "hacker@dojo.pwn.college:$line" .
     done < <(patchelf --print-needed "$BINARY")
 
     scp "hacker@dojo.pwn.college:$INTERP" .
