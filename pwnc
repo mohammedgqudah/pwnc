@@ -14,7 +14,7 @@ CHALLENGE_NAME=$1
 mkdir -p "$CHALLENGE_NAME"
 cd $CHALLENGE_NAME
 
-scp -r hacker@dojo.pwn.college:/challenge/* .
+scp -r 'hacker@dojo.pwn.college:/challenge/.' .
 
 # detect the challenge binary name
 BINARY=$(find . -maxdepth 1 -type f -print0 | xargs -0 file | grep -m 1 "ELF" | awk -F: '{print $1}')
