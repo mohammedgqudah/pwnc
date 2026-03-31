@@ -45,7 +45,7 @@ EOF
 all: pwn
 
 pwn: pwn.c
-$(printf '\t')toolup cc x86_64-unknown-linux-musl -static ./pwn.c -o pwn
+$(printf '\t')musl-gcc -static ./pwn.c -o pwn
 EOF
 
     cat << EOF > "./pwn.c"
