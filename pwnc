@@ -17,7 +17,7 @@ cd $CHALLENGE_NAME
 scp -r 'hacker@dojo.pwn.college:/challenge/.' .
 
 # detect the challenge binary name
-BINARY=$(find . -maxdepth 1 -type f -print0 | xargs -0 file | grep -m 1 "ELF" | awk -F: '{print $1}')
+BINARY=$(find . -maxdepth 1 -type f -print0 | xargs -0 file | grep "ELF" | grep -v "vmlinux" | head -1 | awk -F: '{print $1}')
 
 
 if [[ "$BINARY" == *.ko ]]; then
@@ -26,7 +26,7 @@ from pwn import *
 
 prog = "$BINARY"
 ko = ELF(prog)
-s = ssh('hacker', 'dojo.pwn.college')
+s = ssh('hacker', 'dojo.pwn.college', raw=True)
 
 process("make")
 s.upload("./pwn", "pwn")
@@ -92,11 +92,12 @@ from pwn import *
 prog = "$BINARY-patched"
 
 elf = ELF(prog)
+libc = ELF('./libc.so.6')
 context.binary = elf
 context.aslr = False
 
 if "remote" in sys.argv:
-    session = ssh('hacker', 'dojo.pwn.college')
+    session = ssh('hacker', 'dojo.pwn.college', raw=True)
     p = session.process(f'/challenge/$BINARY')
 else:
     if "gdb" in sys.argv:
